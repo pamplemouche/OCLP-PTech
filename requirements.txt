@@ -1,0 +1,12 @@
+requests
+pyobjc
+colorama
+termcolor
+wxpython @ https://wxpython.org/Phoenix/snapshot-builds/wxPython-4.2.2-cp312-cp312-macosx_10_10_universal2.whl
+pyinstaller
+packaging
+py_sip_xnu
+py-applescript
+markdown2
+macos-pkg-builder
+mac-signing-buddy
