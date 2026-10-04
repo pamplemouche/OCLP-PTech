@@ -36,16 +36,17 @@ jobs:
             ForceX86Exec/ForceX86Exec.cpp \
             -o ForceX86Exec.kext/Contents/MacOS/ForceX86Exec
 
-      - name: Move Kext to Payloads
+      - name: Package and Move Kext Zip
         run: |
           mkdir -p payloads/Kexts/Acidanthera
-          rm -rf payloads/Kexts/Acidanthera/ForceX86Exec.kext
-          cp -R ForceX86Exec.kext payloads/Kexts/Acidanthera/
+          zip -r payloads/Kexts/Acidanthera/ForceX86Exec-v1.0.0-RELEASE.zip ForceX86Exec.kext
 
       - name: Commit Compiled Kext
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action Bot"
-          git add payloads/Kexts/Acidanthera/ForceX86Exec.kext
-          git commit -m "Auto-build : Génération binaire ForceX86Exec.kext" || exit 0
+          # Nettoyage de l'ancien dossier brut si présent
+          git rm -rf payloads/Kexts/Acidanthera/ForceX86Exec.kext || true
+          git add payloads/Kexts/Acidanthera/ForceX86Exec-v1.0.0-RELEASE.zip
+          git commit -m "Auto-build : Génération ForceX86Exec-v1.0.0-RELEASE.zip" || exit 0
           git push
