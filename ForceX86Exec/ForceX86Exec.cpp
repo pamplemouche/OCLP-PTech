@@ -32,24 +32,26 @@ static const char *bootArgOff[] = { "-fx86off" };
 static const char *bootArgDebug[] = { "-fx86dbg" };
 static const char *bootArgBeta[] = { "-fx86beta" };
 
-// Structure PluginConfiguration Lilu
+// Structure PluginConfiguration Lilu (12 champs stricts)
 PluginConfiguration ADDPR(config) {
-    "ForceX86Exec",                // name
-    1,                             // version
-    LiluAPI::AllowNormal,          // disableFlags
-    bootArgOff,                    // bootArgOff
-    arrsize(bootArgOff),           // bootArgOffNum
-    bootArgDebug,                  // bootArgDebug
-    arrsize(bootArgDebug),         // bootArgDebugNum
-    bootArgBeta,                   // bootArgBeta
-    arrsize(bootArgBeta),          // bootArgBetaNum
-    static_cast<KernelVersion>(0), // minKernel (0 = aucune limite)
-    static_cast<KernelVersion>(0), // maxKernel (0 = aucune limite)
-    0,                             // pluginFlags
-    []() {                         // pluginInit
-        fx86.init();
-    }
+    "ForceX86Exec",               // name
+    1,                            // version
+    LiluAPI::AllowNormal,         // disableFlags
+    bootArgOff,                   // bootArgOff
+    arrsize(bootArgOff),          // bootArgOffNum
+    bootArgDebug,                 // bootArgDebug
+    arrsize(bootArgDebug),        // bootArgDebugNum
+    bootArgBeta,                  // bootArgBeta
+    arrsize(bootArgBeta),         // bootArgBetaNum
+    KernelVersion::Min,           // minKernel
+    KernelVersion::Max,           // maxKernel
+    0                             // pluginFlags
 };
+
+// Point d'entree charge automatiquement par Lilu
+static void pluginStart() {
+    fx86.init();
+}
 
 bool FX86::init() {
     SYSLOG("FX86", "Initialisation du kext ForceX86Exec");
