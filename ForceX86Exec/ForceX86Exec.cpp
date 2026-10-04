@@ -43,12 +43,11 @@ PluginConfiguration ADDPR(config) {
     arrsize(bootArgDebug),        // bootArgDebugNum
     bootArgBeta,                  // bootArgBeta
     arrsize(bootArgBeta),         // bootArgBetaNum
-    KernelVersion::Min,           // minKernel
-    KernelVersion::Max,           // maxKernel
+    KernelVersion(0),             // minKernel (0 = aucune limite)
+    KernelVersion(0),             // maxKernel (0 = aucune limite)
     0                             // pluginFlags
 };
 
-// Point d'entree charge automatiquement par Lilu
 static void pluginStart() {
     fx86.init();
 }
