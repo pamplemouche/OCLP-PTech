@@ -1,0 +1,40 @@
+name: Build ForceX86Exec Kext
+
+on:
+  push:
+    paths:
+      - 'ForceX86Exec/**'
+  workflow_dispatch:
+
+jobs:
+  build-kext:
+    runs-on: macos-14
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Lilu & MacKernelSDK
+        run: |
+          mkdir -p build_env
+          cd build_env
+          git clone https://github.com/acidanthera/Lilu.git
+          git clone https://github.com/acidanthera/MacKernelSDK.git
+
+      - name: Compile ForceX86Exec
+        run: |
+          cd ForceX86Exec
+          # Script de compilation xcodebuild ciblant le kernel x86_64
+          xcodebuild -configuration Release -sdk macosx ARCHS=x86_64
+
+      - name: Move Kext to Payloads
+        run: |
+          mkdir -p payloads/Kexts/Acidanthera
+          cp -R ForceX86Exec/build/Release/ForceX86Exec.kext payloads/Kexts/Acidanthera/
+
+      - name: Commit Compiled Kext
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action Bot"
+          git add payloads/Kexts/Acidanthera/ForceX86Exec.kext
+          git commit -m "Auto-build: Mise à jour du binaire ForceX86Exec.kext" || exit 0
+          git push
