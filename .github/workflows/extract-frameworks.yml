@@ -13,18 +13,25 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install ipsw via Homebrew
-        run: brew install blacktop/tap/ipsw
+      - name: Install ipsw Binary Directly
+        run: |
+          IPSW_URL=$(curl -s https://api.github.com/repos/blacktop/ipsw/releases/latest | grep "browser_download_url.*macOS_x86_64.tar.gz" | cut -d : -f 2,3 | tr -d \")
+          curl -L -o ipsw.tar.gz "$IPSW_URL"
+          tar -zxvf ipsw.tar.gz
+          chmod +x ipsw
+          sudo mv ipsw /usr/local/bin/
+          ipsw version
 
       - name: Download & Extract dyld_shared_cache from macOS 26
         run: |
           mkdir -p payloads/Frameworks/26_0/System/Library/Frameworks
           mkdir -p payloads/Frameworks/26_0/System/Library/PrivateFrameworks
+
+          # Telechargement du dyld_shared_cache macOS 26 via ipsw
+          ipsw download dyld --mac --version 26.0 --arch x86_64 || true
           
-          # Extraction dynamique des frameworks dyld_shared_cache
-          # (ipsw telecharge uniquement les segments necessaires depuis Apple)
-          ipsw dyld extract --dyld /System/Volumes/Preboot/*/cryptex.attribute.system/Filesystems/System/Library/dyld/dyld_shared_cache_x86_64 \
-            SkyLight CoreGraphics || true
+          # Extraction des frameworks
+          ipsw dyld extract dyld_shared_cache_x86_64 SkyLight CoreGraphics || true
 
       - name: Commit Extracted Frameworks
         run: |
