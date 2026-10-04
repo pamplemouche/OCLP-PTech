@@ -23,12 +23,12 @@ jobs:
           mkdir -p ForceX86Exec.kext/Contents/MacOS
           cp ForceX86Exec/Info.plist ForceX86Exec.kext/Contents/
 
-          clang++ -O2 -std=c++17 -nostdinc++ \
+          clang++ -O2 -std=c++17 -nostdinc++ -nostdlib \
             -DPRODUCT_NAME=ForceX86Exec \
             -I. -ILilu -ILilu/Lilu -IMacKernelSDK/Headers -IMacKernelSDK/SDK/usr/include \
             -isysroot $(xcrun --show-sdk-path) \
             -target x86_64-apple-macos10.13 \
-            -mkernel -fno-builtin -fno-exceptions -fno-rtti -fno-use-cxa-atexit \
+            -mkernel -fno-builtin -fno-exceptions -fno-rtti -fno-use-cxa-atexit -fno-common \
             -Xlinker -kext \
             ForceX86Exec/ForceX86Exec.cpp \
             -o ForceX86Exec.kext/Contents/MacOS/ForceX86Exec
