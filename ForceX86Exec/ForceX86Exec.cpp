@@ -34,19 +34,19 @@ static const char *bootArgBeta[] = { "-fx86beta" };
 
 // Structure PluginConfiguration Lilu
 PluginConfiguration ADDPR(config) {
-    "ForceX86Exec",        // name
-    1,                     // version
-    LiluAPI::AllowNormal,  // disableFlags
-    bootArgOff,            // bootArgOff
-    arrsize(bootArgOff),   // bootArgOffNum
-    bootArgDebug,          // bootArgDebug
-    arrsize(bootArgDebug), // bootArgDebugNum
-    bootArgBeta,           // bootArgBeta
-    arrsize(bootArgBeta),  // bootArgBetaNum
-    0,                     // minKernel (0 = aucune limite)
-    0,                     // maxKernel (0 = aucune limite)
-    0,                     // pluginFlags
-    []() {                 // pluginInit
+    "ForceX86Exec",                // name
+    1,                             // version
+    LiluAPI::AllowNormal,          // disableFlags
+    bootArgOff,                    // bootArgOff
+    arrsize(bootArgOff),           // bootArgOffNum
+    bootArgDebug,                  // bootArgDebug
+    arrsize(bootArgDebug),         // bootArgDebugNum
+    bootArgBeta,                   // bootArgBeta
+    arrsize(bootArgBeta),          // bootArgBetaNum
+    static_cast<KernelVersion>(0), // minKernel (0 = aucune limite)
+    static_cast<KernelVersion>(0), // maxKernel (0 = aucune limite)
+    0,                             // pluginFlags
+    []() {                         // pluginInit
         fx86.init();
     }
 };
