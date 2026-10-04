@@ -32,11 +32,12 @@ static const char *bootArgOff[] = { "-fx86off" };
 static const char *bootArgDebug[] = { "-fx86dbg" };
 static const char *bootArgBeta[] = { "-fx86beta" };
 
+// Structure PluginConfiguration Lilu native
 PluginConfiguration ADDPR(config) {
-    PluginConfiguration::STRING_MID(ADDPR(configName)),
+    "ForceX86Exec",
     25,
     27,
-    PluginConfiguration::SMP_PRODUCT_ALL,
+    0, // SMP_PROCESSOR_ALL
     bootArgOff, arrsize(bootArgOff),
     bootArgDebug, arrsize(bootArgDebug),
     bootArgBeta, arrsize(bootArgBeta),
