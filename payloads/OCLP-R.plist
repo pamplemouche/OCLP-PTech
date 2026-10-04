@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>OCLP-R</key>
+	<string>v3.1.8</string>
+	<key>PatcherSupportPkg</key>
+	<string>v1.11.3</string>
+	<key>Time Patched</key>
+	<string>August 18, 2026 @ 15:44:28</string>
+	<key>Commit URL</key>
+	<string></string>
+	<key>Kernel Debug Kit Used</key>
+	<string>Not applicable</string>
+	<key>Metal Library Used</key>
+	<string>Not applicable</string>
+	<key>OS Version</key>
+	<string>25.6 (25G220)</string>
+	<key>Custom Signature</key>
+	<true/>
+	<key>Modern Wireless</key>
+	<dict>
+		<key>Overwrite System Volume</key>
+		<dict>
+			<key>/usr/libexec</key>
+			<dict>
+				<key>wifip2pd</key>
+				<string>13.7.2-25</string>
+			</dict>
+		</dict>
+		<key>Merge System Volume</key>
+		<dict>
+			<key>/System/Library/PrivateFrameworks</key>
+			<dict>
+				<key>IO80211.framework</key>
+				<string>13.7.2-25</string>
+				<key>WiFiPeerToPeer.framework</key>
+				<string>13.7.2-25</string>
+			</dict>
+			<key>/System/Library/Frameworks</key>
+			<dict/>
+		</dict>
+	</dict>
+	<key>Voodoo Audio</key>
+	<dict>
+		<key>Overwrite System Volume</key>
+		<dict>
+			<key>/Library/Extensions</key>
+			<dict>
+				<key>VoodooHDA.kext</key>
+				<string>11.3</string>
+			</dict>
+			<key>/Library/PreferencePanes</key>
+			<dict>
+				<key>VoodooHDA.prefPane</key>
+				<string>11.3</string>
+			</dict>
+		</dict>
+	</dict>
+</dict>
+</plist>
