@@ -1,5 +1,5 @@
 <img src="docs/images/OC-Patcher.png" alt="OCLP-R Logo" width="256" />
-             <h1>OCLP-R</h1>
+             <h1>OCLP-PTech</h1>
 </div>
 
 A Python-based project revolving around [Acidanthera's OpenCorePkg](https://github.com/acidanthera/OpenCorePkg) and [Lilu](https://github.com/acidanthera/Lilu) for both running and unlocking features in macOS on supported and unsupported Macs.
