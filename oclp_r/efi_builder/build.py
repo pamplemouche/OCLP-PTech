@@ -13,6 +13,7 @@ from pathlib import Path
 from datetime import date
 
 from .. import constants
+from ..datasets import os_data
 
 from ..support import utilities
 
@@ -67,6 +68,15 @@ class BuildOpenCore:
         # Set Lilu and co.
         support.BuildSupport(self.model, self.constants, self.config).enable_kext("Lilu.kext", self.constants.lilu_version, self.constants.lilu_path)
         self.config["Kernel"]["Quirks"]["DisableLinkeditJettison"] = True
+
+        # Injection de ForceX86Exec.kext pour macOS 27 (Golden Gate)
+        if self.constants.detected_os >= os_data.golden_gate.value:
+            logging.info("- Activation de ForceX86Exec.kext (Bypass x86_64 Darwin 26)")
+            support.BuildSupport(self.model, self.constants, self.config).enable_kext(
+                "ForceX86Exec.kext",
+                "1.0.0",
+                self.constants.payloads_path / "Kexts" / "Acidanthera" / "ForceX86Exec.kext"
+            )
 
         # macOS Sequoia support for Lilu plugins
         self.config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["boot-args"] += " -lilubetaall"
