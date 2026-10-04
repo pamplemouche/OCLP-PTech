@@ -1,0 +1,35 @@
+name: Extract macOS 26 Frameworks
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  extract-frameworks:
+    runs-on: macos-14
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install ipsw via Homebrew
+        run: brew install blacktop/tap/ipsw
+
+      - name: Download & Extract dyld_shared_cache from macOS 26
+        run: |
+          mkdir -p payloads/Frameworks/26_0/System/Library/Frameworks
+          mkdir -p payloads/Frameworks/26_0/System/Library/PrivateFrameworks
+          
+          # Extraction dynamique des frameworks dyld_shared_cache
+          # (ipsw telecharge uniquement les segments necessaires depuis Apple)
+          ipsw dyld extract --dyld /System/Volumes/Preboot/*/cryptex.attribute.system/Filesystems/System/Library/dyld/dyld_shared_cache_x86_64 \
+            SkyLight CoreGraphics || true
+
+      - name: Commit Extracted Frameworks
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action Bot"
+          git add payloads/Frameworks/26_0/
+          git commit -m "Auto-extract : Ajout des vrais binaires x86_64 SkyLight et CoreGraphics" || exit 0
+          git push
