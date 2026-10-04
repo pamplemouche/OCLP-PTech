@@ -32,17 +32,21 @@ static const char *bootArgOff[] = { "-fx86off" };
 static const char *bootArgDebug[] = { "-fx86dbg" };
 static const char *bootArgBeta[] = { "-fx86beta" };
 
-// Structure PluginConfiguration Lilu native
+// Structure PluginConfiguration Lilu
 PluginConfiguration ADDPR(config) {
-    "ForceX86Exec",
-    25,
-    27,
-    0, // SMP_PROCESSOR_ALL
-    bootArgOff, arrsize(bootArgOff),
-    bootArgDebug, arrsize(bootArgDebug),
-    bootArgBeta, arrsize(bootArgBeta),
-    26,
-    []() {
+    "ForceX86Exec",        // name
+    1,                     // version
+    LiluAPI::AllowNormal,  // disableFlags
+    bootArgOff,            // bootArgOff
+    arrsize(bootArgOff),   // bootArgOffNum
+    bootArgDebug,          // bootArgDebug
+    arrsize(bootArgDebug), // bootArgDebugNum
+    bootArgBeta,           // bootArgBeta
+    arrsize(bootArgBeta),  // bootArgBetaNum
+    0,                     // minKernel (0 = aucune limite)
+    0,                     // maxKernel (0 = aucune limite)
+    0,                     // pluginFlags
+    []() {                 // pluginInit
         fx86.init();
     }
 };
