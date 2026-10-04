@@ -15,26 +15,35 @@ jobs:
 
       - name: Set up Lilu & MacKernelSDK
         run: |
-          mkdir -p build_env
-          cd build_env
-          git clone https://github.com/acidanthera/Lilu.git
-          git clone https://github.com/acidanthera/MacKernelSDK.git
+          git clone --depth 1 https://github.com/acidanthera/Lilu.git
+          git clone --depth 1 https://github.com/acidanthera/MacKernelSDK.git
 
-      - name: Compile ForceX86Exec
+      - name: Compile ForceX86Exec Kext
         run: |
-          cd ForceX86Exec
-          # Script de compilation xcodebuild ciblant le kernel x86_64
-          xcodebuild -configuration Release -sdk macosx ARCHS=x86_64
+          # 1. Structure du bundle .kext
+          mkdir -p ForceX86Exec.kext/Contents/MacOS
+          cp ForceX86Exec/Info.plist ForceX86Exec.kext/Contents/
+
+          # 2. Compilation C++ noyau directe via clang++
+          clang++ -O2 -std=c++17 -nostdinc++ \
+            -I. -ILilu -IMacKernelSDK/Headers \
+            -isysroot $(xcrun --show-sdk-path) \
+            -target x86_64-apple-macos10.13 \
+            -mkernel -fno-builtin -fno-exceptions -fno-rtti -fno-use-cxa-atexit \
+            -Xlinker -kext \
+            ForceX86Exec/ForceX86Exec.cpp \
+            -o ForceX86Exec.kext/Contents/MacOS/ForceX86Exec
 
       - name: Move Kext to Payloads
         run: |
           mkdir -p payloads/Kexts/Acidanthera
-          cp -R ForceX86Exec/build/Release/ForceX86Exec.kext payloads/Kexts/Acidanthera/
+          rm -rf payloads/Kexts/Acidanthera/ForceX86Exec.kext
+          cp -R ForceX86Exec.kext payloads/Kexts/Acidanthera/
 
       - name: Commit Compiled Kext
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action Bot"
           git add payloads/Kexts/Acidanthera/ForceX86Exec.kext
-          git commit -m "Auto-build: Mise à jour du binaire ForceX86Exec.kext" || exit 0
+          git commit -m "Auto-build : Génération binaire ForceX86Exec.kext" || exit 0
           git push
