@@ -188,10 +188,14 @@ class PatchSysVolume:
             self.mount_location,
             self.skip_root_kmutil_requirement
         ).merge(save_hid_cs)
+
+
     def clean_launchpad(self) -> None:
         logging.info(self.trans["- Cleaning LaunchPad Settings"])
-        subprocess.run("mkdir -p /Library/Preferences/FeatureFlags/Domain",capture_output=True,text=True,shell=True)
-        subprocess.run("defaults write /Library/Preferences/FeatureFlags/Domain/SpotlightUI.plist SpotlightPlus -dict Enabled -bool true",capture_output=True,text=True,shell=True)
+        subprocess.run("mkdir -p /Library/Preferences/FeatureFlags/Domain", capture_output=True, text=True, shell=True)
+        subprocess.run("defaults write /Library/Preferences/FeatureFlags/Domain/SpotlightUI.plist SpotlightPlus -dict Enabled -bool true", capture_output=True, text=True, shell=True)
+
+
     def _unpatch_root_vol(self):
         """
         Reverts APFS snapshot and cleans up any changes made to the root and data volume
@@ -214,6 +218,7 @@ class PatchSysVolume:
         self.constants.root_patcher_succeeded = True
         logging.info(self.trans["- Unpatching complete"])
         logging.info(self.trans["\nPlease reboot the machine for patches to take effect"])
+
 
     def _clean_up_voodoo_and_hdau(self) -> None:
         try:
@@ -260,7 +265,7 @@ class PatchSysVolume:
         Rebuilds the Kernel Cache
         """
 
-        result =  kernelcache.RebuildKernelCache(
+        result = kernelcache.RebuildKernelCache(
             os_version=self.constants.detected_os,
             mount_location=self.mount_location,
             auxiliary_cache=self.needs_kmutil_exemptions,
@@ -322,6 +327,8 @@ class PatchSysVolume:
         else:
             logging.info(self.trans["- Creating SkylightPlugins folder"])
             subprocess_wrapper.run_as_root_and_verify(["/bin/mkdir", "-p", f"{self.mount_application_support}/SkyLightPlugins/"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+
     def _delete_nonmetal_enforcement(self) -> None:
         """
         Remove defaults related to forced OpenGL rendering
@@ -371,7 +378,6 @@ class PatchSysVolume:
             InstallAutomaticPatchingServices(self.constants).install_auto_patcher_launch_agent(kdk_caching_needed=needs_daemon)
 
         self._rebuild_root_volume()
-        
 
 
     def _execute_patchset(self, required_patches: dict):
@@ -491,6 +497,7 @@ class PatchSysVolume:
         # After install, check if it's present
         return self._resolve_metallib_support_pkg()
 
+
     @cache
     def _resolve_dynamic_patchset(self, variant: DynamicPatchset) -> str:
         """
@@ -574,6 +581,31 @@ class PatchSysVolume:
         patchset_obj = HardwarePatchsetDetection(self.constants)
         self.patch_set_dictionary = patchset_obj.patches
 
+        # --- INJECTION HYBRIDE GOLDEN GATE (macOS 27) ---
+        if self.constants.detected_os >= os_data.os_data.golden_gate:
+            logging.info("- macOS 27 (Golden Gate) détecté : Injection du patchset hybride x86_64")
+            
+            framework_payloads = str(self.constants.payloads_path / "Frameworks" / "26_0")
+            kext_payloads = str(self.constants.payloads_path / "Kexts" / "Graphics")
+
+            hybrid_patch = {
+                PatchType.OVERWRITE_SYSTEM_VOLUME: {
+                    "/System/Library/PrivateFrameworks": {
+                        "SkyLight.framework": framework_payloads
+                    },
+                    "/System/Library/Frameworks": {
+                        "CoreGraphics.framework": framework_payloads
+                    },
+                    "/System/Library/Extensions": {
+                        "AppleIntelHD4000Graphics.kext": kext_payloads,
+                        "AppleIntelFramebufferCapri.kext": kext_payloads
+                    }
+                }
+            }
+
+            self.patch_set_dictionary["Golden Gate x86_64 Hybrid"] = hybrid_patch
+        # --- FIN INJECTION HYBRIDE ---
+
         if self.patch_set_dictionary == {}:
             logging.info(self.trans["- No Root Patches required for your machine!"])
             return
@@ -600,6 +632,7 @@ class PatchSysVolume:
             return
 
         self._patch_root_vol()
+
 
     def start_unpatch(self) -> None:
         """
