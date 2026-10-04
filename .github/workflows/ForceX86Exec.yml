@@ -24,9 +24,9 @@ jobs:
           mkdir -p ForceX86Exec.kext/Contents/MacOS
           cp ForceX86Exec/Info.plist ForceX86Exec.kext/Contents/
 
-          # 2. Compilation C++ noyau directe via clang++
+          # 2. Compilation C++ avec l'arborescence exacte de Lilu
           clang++ -O2 -std=c++17 -nostdinc++ \
-            -I. -ILilu -IMacKernelSDK/Headers \
+            -I. -ILilu -ILilu/Lilu -IMacKernelSDK/Headers -IMacKernelSDK/SDK/usr/include \
             -isysroot $(xcrun --show-sdk-path) \
             -target x86_64-apple-macos10.13 \
             -mkernel -fno-builtin -fno-exceptions -fno-rtti -fno-use-cxa-atexit \
