@@ -6,6 +6,9 @@ on:
       - 'ForceX86Exec/**'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-kext:
     runs-on: macos-14
