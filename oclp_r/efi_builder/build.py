@@ -75,7 +75,7 @@ class BuildOpenCore:
             support.BuildSupport(self.model, self.constants, self.config).enable_kext(
                 "ForceX86Exec.kext",
                 "1.0.0",
-                self.constants.payloads_path / "Kexts" / "Acidanthera" / "ForceX86Exec.kext"
+                self.constants.payloads_path / "Kexts" / "Acidanthera" / "ForceX86Exec-v1.0.0-RELEASE.zip"
             )
 
         # macOS Sequoia support for Lilu plugins
