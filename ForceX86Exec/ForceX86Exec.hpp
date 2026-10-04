@@ -12,7 +12,7 @@ public:
     void deinit();
 
 private:
-    void processKernel(void *user, KernelPatcher &patcher, mach_vm_address_t address, size_t size);
+    void processKernel(void *user, KernelPatcher &patcher);
 };
 
 #endif /* ForceX86Exec_hpp */
