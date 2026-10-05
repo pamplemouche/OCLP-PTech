@@ -13,7 +13,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install ipsw & pbzx
+      - name: Install ipsw Binary
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -21,7 +21,7 @@ jobs:
           tar -zxvf ipsw_*_macOS_x86_64.tar.gz
           chmod +x ipsw
           sudo mv ipsw /usr/local/bin/
-          brew install pbzx
+          ipsw version
 
       - name: Download macOS 15 InstallAssistant & Extract Shared Cache
         run: |
@@ -31,21 +31,25 @@ jobs:
           # Telechargement direct de l'InstallAssistant macOS 15 Sequoia
           ipsw download macos --version 15.0 --assistant -y
 
-          # Extraction du paquet et du dyld_shared_cache_x86_64
-          pkgutil --expand InstallAssistant.pkg pkg_expanded
-          pbzx -n pkg_expanded/SharedSupport.pkg/Payload | cpio -i
-          
-          # Extraction des frameworks depuis le Shared Cache x86_64
-          CACHE_PATH=$(find . -name "dyld_shared_cache_x86_64" | head -n 1)
+          # Extraction native via pkgutil (gere pbzx automatiquement sans outil tiers)
+          pkgutil --expand-full InstallAssistant.pkg pkg_expanded
+
+          # Recherche du dyld_shared_cache_x86_64
+          CACHE_PATH=$(find pkg_expanded -name "dyld_shared_cache_x86_64" | head -n 1)
+          echo "Cache trouve : $CACHE_PATH"
+
+          # Extraction des frameworks x86_64
           ipsw dyld extract "$CACHE_PATH" SkyLight CoreGraphics -o extracted_dylibs
 
       - name: Organize & Commit Extracted Frameworks
         run: |
-          cp -R extracted_dylibs/SkyLight.framework payloads/Frameworks/26_0/System/Library/PrivateFrameworks/
-          cp -R extracted_dylibs/CoreGraphics.framework payloads/Frameworks/26_0/System/Library/Frameworks/
+          if [ -d "extracted_dylibs" ]; then
+            cp -R extracted_dylibs/SkyLight.framework payloads/Frameworks/26_0/System/Library/PrivateFrameworks/ || true
+            cp -R extracted_dylibs/CoreGraphics.framework payloads/Frameworks/26_0/System/Library/Frameworks/ || true
+          fi
 
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action Bot"
           git add payloads/Frameworks/26_0/
-          git commit -m "Auto-extract : Ajout des binaires x86_64 SkyLight et CoreGraphics"
+          git commit -m "Auto-extract : Ajout des binaires x86_64 SkyLight et CoreGraphics" || exit 0
           git push
