@@ -13,7 +13,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install ipsw Binary Directly
+      - name: Free Disk Space on Runner
+        run: |
+          sudo rm -rf /Applications/Xcode*.app
+          sudo rm -rf /Library/Developer/CommandLineTools
+
+      - name: Install ipsw
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -23,19 +28,27 @@ jobs:
           sudo mv ipsw /usr/local/bin/
           ipsw version
 
-      - name: Download & Extract dyld_shared_cache from macOS 26
+      - name: Download macOS 26 Installer & Extract Dyld Cache
         run: |
           mkdir -p payloads/Frameworks/26_0/System/Library/Frameworks
           mkdir -p payloads/Frameworks/26_0/System/Library/PrivateFrameworks
+          
+          # Telechargement du package macOS 26 via la commande officielle
+          ipsw download macos --version 26.0 --latest
+          
+          # Extraction depuis l'IPSW / Installer telecharge
+          ipsw extract --dyld *.ipsw || ipsw extract --dyld *.pkg
+          
+          # Extraction des frameworks x86_64
+          ipsw dyld extract dyld_shared_cache_x86_64 SkyLight CoreGraphics -o extracted_dylibs
 
-          # Telechargement du cache et extraction
-          ipsw download dyld --mac --version 26.0 --arch x86_64 || true
-          ipsw dyld extract dyld_shared_cache_x86_64 SkyLight CoreGraphics || true
-
-      - name: Commit Extracted Frameworks
+      - name: Organize & Commit Extracted Frameworks
         run: |
+          cp -R extracted_dylibs/SkyLight.framework payloads/Frameworks/26_0/System/Library/PrivateFrameworks/
+          cp -R extracted_dylibs/CoreGraphics.framework payloads/Frameworks/26_0/System/Library/Frameworks/
+          
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action Bot"
           git add payloads/Frameworks/26_0/
-          git commit -m "Auto-extract : Ajout des vrais binaires x86_64 SkyLight et CoreGraphics" || exit 0
+          git commit -m "Auto-extract : Ajout des vrais binaires x86_64 SkyLight et CoreGraphics"
           git push
