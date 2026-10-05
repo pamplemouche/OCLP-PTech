@@ -29,12 +29,12 @@ jobs:
           sudo mv ipsw /usr/local/bin/
           ipsw version
 
-      - name: Download InstallAssistant & Mount Cryptex DMG
+      - name: Download InstallAssistant & Extract All Dylibs (-a)
         run: |
           mkdir -p payloads/Frameworks/26_0/System/Library/Frameworks
           mkdir -p payloads/Frameworks/26_0/System/Library/PrivateFrameworks
 
-          # 1. Telechargement du package
+          # 1. Telechargement du paquet
           ipsw download macos --latest -a -y
 
           PKG_PATH=$(find . -name "*.pkg" | head -n 1)
@@ -44,35 +44,45 @@ jobs:
           pkgutil --expand-full "$PKG_PATH" pkg_expanded
           rm -rf "$PKG_PATH"
 
-          # 3. Recherche et montage du DMG interne
+          # 3. Montage du DMG interne
           DMG_PATH=$(find pkg_expanded -name "*.dmg" | grep -iE "cryptex|shared|system" | head -n 1)
           if [ -z "$DMG_PATH" ]; then
             DMG_PATH=$(find pkg_expanded -name "*.dmg" | head -n 1)
           fi
           echo "DMG trouve : $DMG_PATH"
 
-          # Montage sur /Volumes/Cryptex
           hdiutil attach "$DMG_PATH" -mountpoint /Volumes/Cryptex -nobrowse
 
-          # 4. Localisation du dyld_shared_cache_x86_64 dans /Volumes/Cryptex
-          CACHE_PATH=$(find /Volumes/Cryptex -name "dyld_shared_cache_x86_64" | head -n 1)
+          # 4. Recherche large du fichier dyld_shared_cache
+          CACHE_PATH=$(find /Volumes/Cryptex -type f -name "*dyld_shared_cache*" | grep -v "\.map" | head -n 1)
           echo "Cache trouve : $CACHE_PATH"
 
-          # 5. Extraction des frameworks x86_64
-          ipsw dyld extract "$CACHE_PATH" SkyLight CoreGraphics -o extracted_dylibs
+          # 5. Extraction globale avec le drapeau -a
+          if [ -n "$CACHE_PATH" ]; then
+            ipsw dyld extract "$CACHE_PATH" -a -o extracted_dylibs
+          else
+            echo "Erreur : Aucun cache dyld trouve sur le volume !"
+            exit 1
+          fi
 
-          # Demonter le volume DMG
           hdiutil detach /Volumes/Cryptex || true
 
-      - name: Organize & Commit Extracted Frameworks
+      - name: Filter & Commit Frameworks
         run: |
-          if [ -d "extracted_dylibs" ]; then
-            cp -R extracted_dylibs/SkyLight.framework payloads/Frameworks/26_0/System/Library/PrivateFrameworks/ || true
-            cp -R extracted_dylibs/CoreGraphics.framework payloads/Frameworks/26_0/System/Library/Frameworks/ || true
+          # Tri des dylibs extraites
+          SKYLIGHT_PATH=$(find extracted_dylibs -name "*SkyLight*" | head -n 1)
+          COREGRAPHICS_PATH=$(find extracted_dylibs -name "*CoreGraphics*" | head -n 1)
+
+          if [ -n "$SKYLIGHT_PATH" ]; then
+            cp -R "$SKYLIGHT_PATH" payloads/Frameworks/26_0/System/Library/PrivateFrameworks/
+          fi
+
+          if [ -n "$COREGRAPHICS_PATH" ]; then
+            cp -R "$COREGRAPHICS_PATH" payloads/Frameworks/26_0/System/Library/Frameworks/
           fi
 
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action Bot"
           git add payloads/Frameworks/26_0/
-          git commit -m "Auto-extract : Ajout des binaires x86_64 SkyLight et CoreGraphics" || exit 0
+          git commit -m "Auto-extract : Ajout des binaires x86_64 via ipsw -a" || exit 0
           git push
