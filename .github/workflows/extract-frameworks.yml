@@ -13,6 +13,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Maximize Disk Space
+        run: |
+          echo "Espace avant nettoyage :"
+          df -h
+          sudo rm -rf /Applications/Xcode*.app
+          sudo rm -rf /Library/Developer/CommandLineTools
+          sudo rm -rf /usr/local/share/dotnet
+          echo "Espace libre récupéré :"
+          df -h
+
       - name: Install ipsw
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -28,17 +38,19 @@ jobs:
           mkdir -p payloads/Frameworks/26_0/System/Library/Frameworks
           mkdir -p payloads/Frameworks/26_0/System/Library/PrivateFrameworks
 
-          # Telechargement automatique du dernier InstallAssistant.pkg
+          # Telechargement de l'installer (16-18 Go)
           ipsw download macos --latest -a -y
 
-          # Extraction du paquet via pkgutil
+          # Extraction du paquet
           pkgutil --expand-full InstallAssistant.pkg pkg_expanded
 
-          # Recherche du dyld_shared_cache_x86_64
+          # Nettoyage immediat de l'archive .pkg pour ne pas saturer le disque
+          rm -f InstallAssistant.pkg
+
+          # Extraction des dylibs
           CACHE_PATH=$(find pkg_expanded -name "dyld_shared_cache_x86_64" | head -n 1)
           echo "Cache trouve : $CACHE_PATH"
 
-          # Extraction des frameworks x86_64
           ipsw dyld extract "$CACHE_PATH" SkyLight CoreGraphics -o extracted_dylibs
 
       - name: Organize & Commit Extracted Frameworks
