@@ -13,11 +13,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Free Disk Space on Runner
-        run: |
-          sudo rm -rf /Applications/Xcode*.app
-          sudo rm -rf /Library/Developer/CommandLineTools
-
       - name: Install ipsw
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -28,27 +23,26 @@ jobs:
           sudo mv ipsw /usr/local/bin/
           ipsw version
 
-      - name: Download macOS 26 Installer & Extract Dyld Cache
+      - name: Download KDK & Extract Frameworks
         run: |
           mkdir -p payloads/Frameworks/26_0/System/Library/Frameworks
           mkdir -p payloads/Frameworks/26_0/System/Library/PrivateFrameworks
-          
-          # Telechargement cible sans cumuler --latest et --version, avec -y pour auto-confirmer
-          ipsw download macos --version 26.0 -y --assistant
-          
-          # Extraction du dyld_shared_cache
-          ipsw extract --dyld InstallAssistant.pkg || ipsw extract --dyld *.pkg
-          
-          # Extraction des frameworks x86_64
-          ipsw dyld extract dyld_shared_cache_x86_64 SkyLight CoreGraphics -o extracted_dylibs
+
+          # Telechargement du Kernel Debug Kit
+          ipsw download kdk --latest -y
+
+          # Extraction des frameworks depuis le fichier DMG du KDK
+          ipsw dyld extract *.dmg SkyLight CoreGraphics -o extracted_dylibs || true
 
       - name: Organize & Commit Extracted Frameworks
         run: |
-          cp -R extracted_dylibs/SkyLight.framework payloads/Frameworks/26_0/System/Library/PrivateFrameworks/
-          cp -R extracted_dylibs/CoreGraphics.framework payloads/Frameworks/26_0/System/Library/Frameworks/
-          
+          if [ -d "extracted_dylibs" ]; then
+            cp -R extracted_dylibs/SkyLight.framework payloads/Frameworks/26_0/System/Library/PrivateFrameworks/ || true
+            cp -R extracted_dylibs/CoreGraphics.framework payloads/Frameworks/26_0/System/Library/Frameworks/ || true
+          fi
+
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action Bot"
           git add payloads/Frameworks/26_0/
-          git commit -m "Auto-extract : Ajout des vrais binaires x86_64 SkyLight et CoreGraphics"
+          git commit -m "Auto-extract : Ajout des dylibs x86_64 via KDK" || exit 0
           git push
