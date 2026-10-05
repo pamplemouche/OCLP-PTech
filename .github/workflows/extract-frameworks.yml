@@ -17,8 +17,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release download --repo blacktop/ipsw --pattern "*macOS_x86_64.tar.gz" --clobber
-          tar -zxvf ipsw*.tar.gz
+          gh release download --repo blacktop/ipsw --pattern "ipsw_*_macOS_x86_64.tar.gz" --clobber
+          tar -zxvf ipsw_*_macOS_x86_64.tar.gz
           chmod +x ipsw
           sudo mv ipsw /usr/local/bin/
           ipsw version
@@ -28,7 +28,7 @@ jobs:
           mkdir -p payloads/Frameworks/26_0/System/Library/Frameworks
           mkdir -p payloads/Frameworks/26_0/System/Library/PrivateFrameworks
 
-          # Telechargement et extraction
+          # Telechargement du cache et extraction
           ipsw download dyld --mac --version 26.0 --arch x86_64 || true
           ipsw dyld extract dyld_shared_cache_x86_64 SkyLight CoreGraphics || true
 
