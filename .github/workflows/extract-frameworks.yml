@@ -13,7 +13,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install ipsw Binary
+      - name: Install ipsw
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -23,15 +23,15 @@ jobs:
           sudo mv ipsw /usr/local/bin/
           ipsw version
 
-      - name: Download macOS 15 InstallAssistant & Extract Shared Cache
+      - name: Download InstallAssistant & Extract Shared Cache
         run: |
           mkdir -p payloads/Frameworks/26_0/System/Library/Frameworks
           mkdir -p payloads/Frameworks/26_0/System/Library/PrivateFrameworks
 
-          # Telechargement direct de l'InstallAssistant macOS 15 Sequoia
-          ipsw download macos --version 15.0 --assistant -y
+          # Telechargement automatique du dernier InstallAssistant.pkg
+          ipsw download macos --latest -a -y
 
-          # Extraction native via pkgutil (gere pbzx automatiquement sans outil tiers)
+          # Extraction du paquet via pkgutil
           pkgutil --expand-full InstallAssistant.pkg pkg_expanded
 
           # Recherche du dyld_shared_cache_x86_64
