@@ -15,9 +15,8 @@ jobs:
 
       - name: Install ipsw Binary Directly
         run: |
-          IPSW_URL=$(curl -s https://api.github.com/repos/blacktop/ipsw/releases/latest | grep "browser_download_url.*macOS_x86_64.tar.gz" | cut -d : -f 2,3 | tr -d \")
-          curl -L -o ipsw.tar.gz "$IPSW_URL"
-          tar -zxvf ipsw.tar.gz
+          gh release download --repo blacktop/ipsw --pattern "*macOS_x86_64.tar.gz" --clobber
+          tar -zxvf ipsw*.tar.gz
           chmod +x ipsw
           sudo mv ipsw /usr/local/bin/
           ipsw version
@@ -27,10 +26,8 @@ jobs:
           mkdir -p payloads/Frameworks/26_0/System/Library/Frameworks
           mkdir -p payloads/Frameworks/26_0/System/Library/PrivateFrameworks
 
-          # Telechargement du dyld_shared_cache macOS 26 via ipsw
+          # Telechargement et extraction
           ipsw download dyld --mac --version 26.0 --arch x86_64 || true
-          
-          # Extraction des frameworks
           ipsw dyld extract dyld_shared_cache_x86_64 SkyLight CoreGraphics || true
 
       - name: Commit Extracted Frameworks
