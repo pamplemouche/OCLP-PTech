@@ -15,13 +15,9 @@ jobs:
 
       - name: Maximize Disk Space
         run: |
-          echo "Espace avant nettoyage :"
-          df -h
           sudo rm -rf /Applications/Xcode*.app
           sudo rm -rf /Library/Developer/CommandLineTools
           sudo rm -rf /usr/local/share/dotnet
-          echo "Espace libre récupéré :"
-          df -h
 
       - name: Install ipsw
         env:
@@ -38,16 +34,20 @@ jobs:
           mkdir -p payloads/Frameworks/26_0/System/Library/Frameworks
           mkdir -p payloads/Frameworks/26_0/System/Library/PrivateFrameworks
 
-          # Telechargement de l'installer (16-18 Go)
+          # Telechargement du paquet
           ipsw download macos --latest -a -y
 
-          # Extraction du paquet
-          pkgutil --expand-full InstallAssistant.pkg pkg_expanded
+          # Localisation dynamique du binaire .pkg télécharge
+          PKG_PATH=$(find . -name "*.pkg" | head -n 1)
+          echo "Package trouve : $PKG_PATH"
 
-          # Nettoyage immediat de l'archive .pkg pour ne pas saturer le disque
-          rm -f InstallAssistant.pkg
+          # Extraction du paquet via pkgutil
+          pkgutil --expand-full "$PKG_PATH" pkg_expanded
 
-          # Extraction des dylibs
+          # Nettoyage immediat de l'archive lourde
+          rm -rf "$PKG_PATH"
+
+          # Extraction des dylibs depuis le dyld_shared_cache
           CACHE_PATH=$(find pkg_expanded -name "dyld_shared_cache_x86_64" | head -n 1)
           echo "Cache trouve : $CACHE_PATH"
 
