@@ -29,29 +29,40 @@ jobs:
           sudo mv ipsw /usr/local/bin/
           ipsw version
 
-      - name: Download InstallAssistant & Extract Shared Cache
+      - name: Download InstallAssistant & Mount Cryptex DMG
         run: |
           mkdir -p payloads/Frameworks/26_0/System/Library/Frameworks
           mkdir -p payloads/Frameworks/26_0/System/Library/PrivateFrameworks
 
-          # Telechargement du paquet
+          # 1. Telechargement du package
           ipsw download macos --latest -a -y
 
-          # Localisation dynamique du binaire .pkg télécharge
           PKG_PATH=$(find . -name "*.pkg" | head -n 1)
           echo "Package trouve : $PKG_PATH"
 
-          # Extraction du paquet via pkgutil
+          # 2. Extraction du paquet
           pkgutil --expand-full "$PKG_PATH" pkg_expanded
-
-          # Nettoyage immediat de l'archive lourde
           rm -rf "$PKG_PATH"
 
-          # Extraction des dylibs depuis le dyld_shared_cache
-          CACHE_PATH=$(find pkg_expanded -name "dyld_shared_cache_x86_64" | head -n 1)
+          # 3. Recherche et montage du DMG interne
+          DMG_PATH=$(find pkg_expanded -name "*.dmg" | grep -iE "cryptex|shared|system" | head -n 1)
+          if [ -z "$DMG_PATH" ]; then
+            DMG_PATH=$(find pkg_expanded -name "*.dmg" | head -n 1)
+          fi
+          echo "DMG trouve : $DMG_PATH"
+
+          # Montage sur /Volumes/Cryptex
+          hdiutil attach "$DMG_PATH" -mountpoint /Volumes/Cryptex -nobrowse
+
+          # 4. Localisation du dyld_shared_cache_x86_64 dans /Volumes/Cryptex
+          CACHE_PATH=$(find /Volumes/Cryptex -name "dyld_shared_cache_x86_64" | head -n 1)
           echo "Cache trouve : $CACHE_PATH"
 
+          # 5. Extraction des frameworks x86_64
           ipsw dyld extract "$CACHE_PATH" SkyLight CoreGraphics -o extracted_dylibs
+
+          # Demonter le volume DMG
+          hdiutil detach /Volumes/Cryptex || true
 
       - name: Organize & Commit Extracted Frameworks
         run: |
