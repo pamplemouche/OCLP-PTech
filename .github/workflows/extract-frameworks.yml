@@ -33,11 +33,11 @@ jobs:
           mkdir -p payloads/Frameworks/26_0/System/Library/Frameworks
           mkdir -p payloads/Frameworks/26_0/System/Library/PrivateFrameworks
           
-          # Telechargement du package macOS 26 via la commande officielle
-          ipsw download macos --version 26.0 --latest
+          # Telechargement cible sans cumuler --latest et --version, avec -y pour auto-confirmer
+          ipsw download macos --version 26.0 -y --assistant
           
-          # Extraction depuis l'IPSW / Installer telecharge
-          ipsw extract --dyld *.ipsw || ipsw extract --dyld *.pkg
+          # Extraction du dyld_shared_cache
+          ipsw extract --dyld InstallAssistant.pkg || ipsw extract --dyld *.pkg
           
           # Extraction des frameworks x86_64
           ipsw dyld extract dyld_shared_cache_x86_64 SkyLight CoreGraphics -o extracted_dylibs
