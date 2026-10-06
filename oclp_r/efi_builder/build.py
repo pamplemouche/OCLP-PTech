@@ -12,9 +12,11 @@ import plistlib
 from pathlib import Path
 from datetime import date
 
-from .. import constants
-from ..datasets import os_data
+# Importation de constants depuis efi_builder/ (même dossier)
+from . import constants
 
+# Imports depuis les dossiers parents/voisins
+from ..datasets import os_data
 from ..support import utilities
 
 from .networking import (
@@ -32,6 +34,7 @@ from . import (
     misc
 )
 from ..support.translate_language import TranslateLanguage_efi_builder
+
 
 def rmtree_handler(func, path, exc_info) -> None:
     if exc_info[0] == FileNotFoundError:
@@ -52,6 +55,39 @@ class BuildOpenCore:
         self.constants: constants.Constants = global_constants
 
         self._build_opencore()
+
+
+    def _inject_ptech_background(self) -> None:
+        """
+        Injecte l'arrière-plan PTech (Background.png / Background.icns)
+        dans le répertoire de thème OpenCanopy actif de l'EFI.
+        """
+        # 1. Recherche du fichier source dans payloads/OpenCore/
+        bg_source = self.constants.payloads_path / "OpenCore" / "Background.png"
+        if not bg_source.exists():
+            bg_source = self.constants.payloads_path / "OpenCore" / "Background.icns"
+
+        if not bg_source.exists():
+            logging.warning("- [PTech] Aucun fichier Background.png ou Background.icns trouvé dans payloads/OpenCore/")
+            return
+
+        # 2. Récupération du thème actif configuré par misc.py (ex: Acidanthera/GoldenGate)
+        raw_variant = "Acidanthera\\GoldenGate"
+        if self.config and "Misc" in self.config and "Boot" in self.config["Misc"]:
+            variant = self.config["Misc"]["Boot"].get("PickerVariant", "Auto")
+            if variant and variant != "Auto":
+                raw_variant = variant
+
+        # Conversion du séparateur de chemin OpenCore (\) vers le format Unix (/)
+        theme_subpath = raw_variant.replace("\\", "/")
+
+        # 3. Répertoire de destination dans la structure EFI
+        target_dir = Path(self.constants.oc_folder) / "Resources" / "Image" / theme_subpath
+        target_dir.mkdir(parents=True, exist_ok=True)
+
+        # 4. Copie de l'arrière-plan
+        shutil.copy(bg_source, target_dir / bg_source.name)
+        logging.info(f"- [PTech] Arrière-plan {bg_source.name} injecté avec succès dans : {theme_subpath}")
 
 
     def _build_efi(self) -> None:
@@ -94,6 +130,9 @@ class BuildOpenCore:
             misc.BuildMiscellaneous
         ]:
             function(self.model, self.constants, self.config)
+
+        # Injection de l'arrière-plan personnalisé PTech
+        self._inject_ptech_background()
 
         # Work-around ocvalidate
         if self.constants.validate is False:
