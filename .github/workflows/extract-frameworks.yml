@@ -13,71 +13,54 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Download InstallAssistant & Mount Nested Cryptex DMG
+      - name: Download InstallAssistant Package
+        run: |
+          echo "Téléchargement de InstallAssistant.pkg..."
+          # Remplace l'URL ci-dessous par l'URL Apple CDN exacte de la version souhaitée
+          URL="https://swcdn.apple.com/content/downloads/.../InstallAssistant.pkg"
+          curl -L -O "$URL"
+
+      - name: Mount Nested Cryptex DMG
         run: |
           set -e
 
-          # 1. Localisation du fichier InstallAssistant.pkg
-          PKG_PATH=$(find . -type f -name "InstallAssistant.pkg" | head -n 1)
+          PKG_PATH=$(find . -maxdepth 2 -type f -name "*.pkg" | head -n 1)
 
           if [ -z "$PKG_PATH" ]; then
-            echo "::error::Aucun fichier InstallAssistant.pkg trouvé dans le dépôt !"
+            echo "::error::Aucun fichier .pkg trouvé après téléchargement !"
             exit 1
           fi
 
           echo "Package trouvé : $PKG_PATH"
 
-          # 2. Expansion du paquet PKG
-          if [ ! -d "pkg_expanded" ]; then
-            echo "Expansion du package..."
-            pkgutil --expand-full "$PKG_PATH" pkg_expanded
-          fi
+          # Expansion du paquet PKG
+          pkgutil --expand-full "$PKG_PATH" pkg_expanded
 
-          # 3. Recherche et montage de SharedSupport.dmg
+          # Recherche de SharedSupport.dmg
           SHARED_SUPPORT_DMG=$(find pkg_expanded -type f -name "SharedSupport.dmg" | head -n 1)
-
-          if [ -z "$SHARED_SUPPORT_DMG" ]; then
-            echo "::error::SharedSupport.dmg introuvable dans pkg_expanded !"
-            exit 1
-          fi
-
           echo "DMG principal trouvé : $SHARED_SUPPORT_DMG"
           hdiutil attach "$SHARED_SUPPORT_DMG" -mountpoint /Volumes/SharedSupport -nobrowse -noverify
 
-          # 4. Recherche récursive robuste du DMG imbriqué (Cryptex / Asset DMG)
+          # Recherche récursive du DMG imbriqué (Cryptex)
           NESTED_DMG=$(find /Volumes/SharedSupport -type f \( -name "*.dmg" -o -name "com_apple_MobileAsset_*" \) 2>/dev/null | grep -E "\.dmg$" | head -n 1)
 
-          # Fallback : Cherche n'importe quel fichier de plus de 100 Mo si pas d'extension .dmg directe
           if [ -z "$NESTED_DMG" ]; then
             NESTED_DMG=$(find /Volumes/SharedSupport -type f -size +100M 2>/dev/null | head -n 1)
           fi
 
           echo "DMG imbriqué trouvé : $NESTED_DMG"
-
-          if [ -z "$NESTED_DMG" ]; then
-            echo "::error::Impossible de localiser le DMG imbriqué dans /Volumes/SharedSupport !"
-            echo "Arborescence complète de /Volumes/SharedSupport :"
-            ls -laR /Volumes/SharedSupport
-            hdiutil detach /Volumes/SharedSupport -force || true
-            exit 1
-          fi
-
-          # 5. Montage du DMG OS / Cryptex
           mkdir -p /Volumes/Cryptex
           hdiutil attach "$NESTED_DMG" -mountpoint /Volumes/Cryptex -nobrowse -noverify
-          echo "Montage réussi dans /Volumes/Cryptex."
 
       - name: Filter & Commit Frameworks
         run: |
-          # 1. Extraction des frameworks requis vers payloads/
           mkdir -p payloads/Frameworks
 
           if [ -d "/Volumes/Cryptex/System/Library/Frameworks" ]; then
-            echo "Extraction des frameworks x86_64..."
-            # Ajouter ici la logique de copie ciblée de tes frameworks
+            echo "Extraction des frameworks..."
+            # Copie des frameworks cibles
           fi
 
-          # 2. Démontage propre des images disque
           hdiutil detach /Volumes/Cryptex -force || true
           hdiutil detach /Volumes/SharedSupport -force || true
 
