@@ -12,10 +12,10 @@ import plistlib
 from pathlib import Path
 from datetime import date
 
-# Importation de constants depuis efi_builder/ (même dossier)
-from . import constants
+# Importation de constants depuis sucatalog/
+from ..sucatalog import constants
 
-# Imports depuis les dossiers parents/voisins
+# Imports depuis les autres modules de oclp_r
 from ..datasets import os_data
 from ..support import utilities
 
