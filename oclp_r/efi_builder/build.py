@@ -13,7 +13,7 @@ from pathlib import Path
 from datetime import date
 
 # Importation de constants depuis sucatalog/
-from ..sucatalog import constants
+from .. import constants
 
 # Imports depuis les autres modules de oclp_r
 from ..datasets import os_data
