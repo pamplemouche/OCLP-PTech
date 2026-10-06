@@ -29,7 +29,7 @@ jobs:
           sudo mv ipsw /usr/local/bin/
           ipsw version
 
-      - name: Download InstallAssistant & Extract All Dylibs (-a)
+      - name: Download InstallAssistant & Mount Nested Cryptex DMG
         run: |
           mkdir -p payloads/Frameworks/26_0/System/Library/Frameworks
           mkdir -p payloads/Frameworks/26_0/System/Library/PrivateFrameworks
@@ -44,32 +44,37 @@ jobs:
           pkgutil --expand-full "$PKG_PATH" pkg_expanded
           rm -rf "$PKG_PATH"
 
-          # 3. Montage du DMG interne
-          DMG_PATH=$(find pkg_expanded -name "*.dmg" | grep -iE "cryptex|shared|system" | head -n 1)
-          if [ -z "$DMG_PATH" ]; then
-            DMG_PATH=$(find pkg_expanded -name "*.dmg" | head -n 1)
+          # 3. Montage du premier DMG (SharedSupport.dmg)
+          MAIN_DMG=$(find pkg_expanded -name "*.dmg" | head -n 1)
+          echo "DMG principal trouve : $MAIN_DMG"
+          hdiutil attach "$MAIN_DMG" -mountpoint /Volumes/SharedSupport -nobrowse
+
+          # 4. Recherche et montage du DMG systeme imbrique (CryptexOS / OS.dmg)
+          NESTED_DMG=$(find /Volumes/SharedSupport -name "*.dmg" | grep -iE "cryptex|os" | head -n 1)
+          if [ -z "$NESTED_DMG" ]; then
+            NESTED_DMG=$(find /Volumes/SharedSupport -name "*.dmg" | head -n 1)
           fi
-          echo "DMG trouve : $DMG_PATH"
+          echo "DMG imbrique trouve : $NESTED_DMG"
 
-          hdiutil attach "$DMG_PATH" -mountpoint /Volumes/Cryptex -nobrowse
+          hdiutil attach "$NESTED_DMG" -mountpoint /Volumes/CryptexOS -nobrowse
 
-          # 4. Recherche large du fichier dyld_shared_cache
-          CACHE_PATH=$(find /Volumes/Cryptex -type f -name "*dyld_shared_cache*" | grep -v "\.map" | head -n 1)
+          # 5. Recherche du dyld_shared_cache dans le volume systeme reel
+          CACHE_PATH=$(find /Volumes/CryptexOS -type f -name "*dyld_shared_cache*" 2>/dev/null | grep -v "\.map" | head -n 1)
           echo "Cache trouve : $CACHE_PATH"
 
-          # 5. Extraction globale avec le drapeau -a
+          # 6. Extraction globale avec -a
           if [ -n "$CACHE_PATH" ]; then
             ipsw dyld extract "$CACHE_PATH" -a -o extracted_dylibs
           else
-            echo "Erreur : Aucun cache dyld trouve sur le volume !"
+            echo "Erreur : Aucun cache dyld trouve dans le DMG imbrique !"
             exit 1
           fi
 
-          hdiutil detach /Volumes/Cryptex || true
+          hdiutil detach /Volumes/CryptexOS || true
+          hdiutil detach /Volumes/SharedSupport || true
 
       - name: Filter & Commit Frameworks
         run: |
-          # Tri des dylibs extraites
           SKYLIGHT_PATH=$(find extracted_dylibs -name "*SkyLight*" | head -n 1)
           COREGRAPHICS_PATH=$(find extracted_dylibs -name "*CoreGraphics*" | head -n 1)
 
@@ -84,5 +89,5 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action Bot"
           git add payloads/Frameworks/26_0/
-          git commit -m "Auto-extract : Ajout des binaires x86_64 via ipsw -a" || exit 0
+          git commit -m "Auto-extract : Ajout des binaires x86_64 depuis le DMG imbrique" || exit 0
           git push
