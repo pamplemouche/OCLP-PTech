@@ -16,19 +16,18 @@ jobs:
       - name: Download InstallAssistant Package
         run: |
           set -e
-          echo "Téléchargement de InstallAssistant.pkg depuis le CDN Apple..."
-          
-          # URL directe du package macOS InstallAssistant sur les serveurs d'Apple
-          URL="https://swcdn.apple.com/content/downloads/11/60/072-08251-A_VJ2TWIZ7CM/mrkdsdl45umr07vwe27n8hfvubidmxgcbk/InstallAssistant.pkg"
-          
-          curl -L "$URL" -o InstallAssistant.pkg
+          echo "Téléchargement de InstallAssistant.pkg..."
 
-          # Vérification que le fichier fait au moins 1 Go (1 000 000 000 octets)
+          # URL directe Apple CDN avec User-Agent Mac et drapeau --fail (-f)
+          URL="https://swcdn.apple.com/content/downloads/12/32/062-38600-A_9E3K8S0C12/k69e38z9hvwx881v23851b4c48p53j5o40/InstallAssistant.pkg"
+
+          curl -fL -A "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" --retry 3 "$URL" -o InstallAssistant.pkg
+
           FILE_SIZE=$(stat -f%z InstallAssistant.pkg 2>/dev/null || echo 0)
           echo "Taille du fichier téléchargé : $FILE_SIZE octets"
 
           if [ "$FILE_SIZE" -lt 1000000000 ]; then
-            echo "::error::Le téléchargement a échoué ou a renvoyé un fichier incomplet ($FILE_SIZE octets) !"
+            echo "::error::Fichier incomplet ou introuvable sur le CDN ($FILE_SIZE octets)."
             exit 1
           fi
 
@@ -40,7 +39,7 @@ jobs:
           echo "Package valide trouvé : $PKG_PATH"
 
           # 1. Expansion du paquet PKG
-          echo "Extraction de la structure PKG (cette étape peut prendre 1 à 2 minutes)..."
+          echo "Extraction de la structure PKG..."
           pkgutil --expand-full "$PKG_PATH" pkg_expanded
 
           # 2. Recherche et montage de SharedSupport.dmg
@@ -54,7 +53,7 @@ jobs:
           echo "DMG principal trouvé : $SHARED_SUPPORT_DMG"
           hdiutil attach "$SHARED_SUPPORT_DMG" -mountpoint /Volumes/SharedSupport -nobrowse -noverify
 
-          # 3. Recherche du DMG Cryptex / Asset imbriqué
+          # 3. Recherche récursive du DMG Cryptex / Asset imbriqué
           NESTED_DMG=$(find /Volumes/SharedSupport -type f \( -name "*.dmg" -o -name "com_apple_MobileAsset_*" \) 2>/dev/null | grep -E "\.dmg$" | head -n 1)
 
           if [ -z "$NESTED_DMG" ]; then
@@ -78,8 +77,8 @@ jobs:
           mkdir -p payloads/Frameworks
 
           if [ -d "/Volumes/Cryptex/System/Library/Frameworks" ]; then
-            echo "Extraction des frameworks vers payloads/Frameworks..."
-            # Ajoutez ici la logique de copie ciblée
+            echo "Extraction des frameworks x86_64 vers payloads/Frameworks..."
+            # Placer ici les commandes cp pour les frameworks cibles
           fi
 
           hdiutil detach /Volumes/Cryptex -force || true
